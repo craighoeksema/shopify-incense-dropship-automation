@@ -1,0 +1,40 @@
+{
+  "target": {
+    "mode": "all_shippable_line_items_target",
+    "eligibleFulfillmentOrderStatuses": ["OPEN"],
+    "matchers": [
+      {
+        "skuIncludes": ["incense"],
+        "skuPrefixes": ["INC-"],
+        "titleIncludes": ["incense"],
+        "productTags": ["incense"],
+        "productTypes": ["Incense"],
+        "vendors": ["Cinnamon Projects"]
+      }
+    ]
+  },
+  "shipping": {
+    "packageInfo": {
+      "customPackage": {
+        "type": "BOX",
+        "dimensions": {
+          "length": 8,
+          "width": 6,
+          "height": 2,
+          "unit": "INCHES"
+        },
+        "weight": {
+          "value": 2,
+          "unit": "OUNCES"
+        }
+      }
+    },
+    "notifyCustomer": false,
+    "shippingDateOffsetDays": 0,
+    "pollIntervalMs": 2000,
+    "maxPollAttempts": 30
+  },
+  "notifications": {
+    "vendorEmailTo": "sales@cinnamonprojects.com"
+  }
+}
