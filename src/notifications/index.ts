@@ -10,11 +10,12 @@ export function createNotifier(config: RuntimeConfig): Notifier {
     notifiers.push(new SlackNotifier(config.automation.notifications.slackWebhookUrl));
   }
 
-  if (config.smtp && (config.automation.notifications.vendorEmailTo || config.automation.notifications.internalEmailTo)) {
+  if (config.smtp && (config.automation.notifications.vendorEmailTo || config.automation.notifications.internalEmailTo || config.automation.notifications.dryRunEmailTo)) {
     notifiers.push(new EmailNotifier(
       config.smtp,
       config.automation.notifications.vendorEmailTo,
-      config.automation.notifications.internalEmailTo
+      config.automation.notifications.internalEmailTo,
+      config.automation.notifications.dryRunEmailTo
     ));
   }
 

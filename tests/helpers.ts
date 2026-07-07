@@ -68,6 +68,7 @@ export function testRuntimeConfig(overrides: Partial<RuntimeConfig> = {}): Runti
     shopifyShopDomain: "test-shop.myshopify.com",
     shopifyAdminAccessToken: "shpat_test",
     shopifyApiSecret: "webhook-secret",
+    dryRun: false,
     shopifyApiVersion: "2026-07",
     internalApiToken: "internal-token",
     store: {

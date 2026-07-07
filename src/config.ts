@@ -72,6 +72,7 @@ const AutomationConfigSchema = z.object({
   notifications: z.object({
     vendorEmailTo: z.string().email().optional(),
     internalEmailTo: z.string().email().optional(),
+    dryRunEmailTo: z.string().optional(),
     slackWebhookUrl: z.string().url().optional()
   }).default({})
 });
@@ -141,6 +142,7 @@ export function loadAutomationConfig(env: NodeJS.ProcessEnv = process.env): Auto
       ...parsed.notifications,
       vendorEmailTo: optionalString(env.VENDOR_EMAIL_TO) ?? parsed.notifications.vendorEmailTo,
       internalEmailTo: optionalString(env.INTERNAL_EMAIL_TO) ?? parsed.notifications.internalEmailTo,
+      dryRunEmailTo: optionalString(env.DRY_RUN_EMAIL_TO) ?? parsed.notifications.dryRunEmailTo,
       slackWebhookUrl: optionalString(env.SLACK_WEBHOOK_URL) ?? parsed.notifications.slackWebhookUrl
     }
   };
@@ -178,6 +180,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): RuntimeConfig 
     shopifyApiSecret,
     shopifyApiVersion: env.SHOPIFY_API_VERSION ?? "2026-07",
     internalApiToken: optionalString(env.INTERNAL_API_TOKEN),
+    dryRun: parseBool(env.DRY_RUN, false),
     store: {
       driver: storeDriver,
       filePath: env.FILE_STORE_PATH ?? "./data/automation-store.json",

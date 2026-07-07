@@ -72,7 +72,8 @@ export async function buildWorker(): Promise<{ worker: AutomationWorker; store: 
     config: config.automation,
     shopifyLabels,
     store,
-    notifier
+    notifier,
+    dryRun: config.dryRun
   });
 
   return {
