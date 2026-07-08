@@ -84,22 +84,35 @@ Three pieces:
 
 ---
 
-## 4. Step 2 — Set up email sending (SMTP)
+## 4. Step 2 — Set up email sending (Google Workspace)
 
-The dry-run alerts are emails, so the app needs an SMTP account. Two easy paths:
+The dry-run alerts are emails sent over Gmail's SMTP server using a dedicated
+**App Password**. Do this on the Google account you want the alerts to be sent *from*
+(a shared/service address like `automation@apparatusstudio.com` is ideal, but any
+Workspace account works).
 
-**Option A — Google Workspace (you're on `@apparatusstudio.com`):**
-- Create an [App Password](https://myaccount.google.com/apppasswords) for a sending account.
-- `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=587`, `SMTP_SECURE=false`
-- `SMTP_USER=the-account@apparatusstudio.com`, `SMTP_PASS=<the app password>`
-- Good enough for low-volume internal dry-run alerts.
+1. **Turn on 2-Step Verification** for that account (App Passwords require it):
+   [myaccount.google.com/security](https://myaccount.google.com/security) → *2-Step Verification*.
+2. **Create an App Password:** [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords)
+   → name it e.g. `Incense Automation` → **Create**. Google shows a 16-character
+   password (like `abcd efgh ijkl mnop`). Copy it; the spaces don't matter.
+3. Use these values (they go into Render in Step 4 / Appendix A):
+   - `SMTP_HOST=smtp.gmail.com`
+   - `SMTP_PORT=587`
+   - `SMTP_SECURE=false`  *(587 uses STARTTLS — correct as `false` here)*
+   - `SMTP_USER=automation@apparatusstudio.com`  *(the full address you enabled it on)*
+   - `SMTP_PASS=<the 16-char app password>`  *(not the account's normal password)*
+   - `EMAIL_FROM="Incense Automation <automation@apparatusstudio.com>"`
+     *(keep the address the same as `SMTP_USER` for best deliverability)*
 
-**Option B — Transactional provider (SendGrid, Postmark, Mailgun):**
-- Create an account + API key. Example (SendGrid): `SMTP_HOST=smtp.sendgrid.net`,
-  `SMTP_PORT=587`, `SMTP_USER=apikey`, `SMTP_PASS=<api key>`.
-- More robust; better if you later want vendor emails to deliver reliably at go-live.
+Gmail sends ~2,000 messages/day per Workspace account — far more than dry-run alerts need.
 
-Either way also set `EMAIL_FROM`, e.g. `EMAIL_FROM="Incense Automation <automation@apparatusstudio.com>"`.
+> **If the App Passwords page is missing or blocked:** your Workspace admin has disabled
+> them by policy. Two fixes: (a) ask the admin to allow app passwords for that account,
+> or (b) have the admin set up the **Google Workspace SMTP relay**
+> (`smtp-relay.gmail.com`, port `587`) for the sending domain — then you can leave
+> `SMTP_USER`/`SMTP_PASS` blank and just point `SMTP_HOST` at the relay. The app-password
+> route is simpler if it's available to you.
 
 ---
 
@@ -266,12 +279,12 @@ Set these on **both** the web service and the worker (identical values).
 | `INTERNAL_API_TOKEN` | *(long random string)* | protects the manual-enqueue endpoint |
 | `DRY_RUN` | `true` | **the whole point** — no labels bought |
 | `DRY_RUN_EMAIL_TO` | `you@apparatusstudio.com, tracey@apparatusstudio.com` | comma-separated |
-| `SMTP_HOST` | e.g. `smtp.gmail.com` | Step 2 |
+| `SMTP_HOST` | `smtp.gmail.com` | Step 2 |
 | `SMTP_PORT` | `587` | |
-| `SMTP_SECURE` | `false` | |
-| `SMTP_USER` | *(smtp user)* | Step 2 |
-| `SMTP_PASS` | *(smtp password / api key)* | secret |
-| `EMAIL_FROM` | `"Incense Automation <automation@apparatusstudio.com>"` | |
+| `SMTP_SECURE` | `false` | 587 uses STARTTLS |
+| `SMTP_USER` | `automation@apparatusstudio.com` | full sending address |
+| `SMTP_PASS` | *(16-char Google App Password)* | secret — not the account password |
+| `EMAIL_FROM` | `"Incense Automation <automation@apparatusstudio.com>"` | match `SMTP_USER` |
 | `VENDOR_EMAIL_TO` | *(leave blank in dry run)* | set at go-live |
 
 ---
