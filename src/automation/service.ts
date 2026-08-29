@@ -1,9 +1,11 @@
 import type {
   AutomationConfig,
   AutomationRunResult,
+  DryRunPlan,
   PurchasedShippingLabel,
   ShopifyFulfillmentOrder,
-  ShopifyOrder
+  ShopifyOrder,
+  WeightInput
 } from "../types.js";
 import type { Notifier } from "../notifications/index.js";
 import type { AutomationStore } from "../store/index.js";
@@ -22,6 +24,7 @@ interface OrderAutomationServiceOptions {
   shopifyLabels: ShopifyLabelsService;
   store: AutomationStore;
   notifier: Notifier;
+  dryRun?: boolean;
   sleep?: (ms: number) => Promise<void>;
 }
 
@@ -30,6 +33,7 @@ export class OrderAutomationService {
   private readonly shopifyLabels: ShopifyLabelsService;
   private readonly store: AutomationStore;
   private readonly notifier: Notifier;
+  private readonly dryRun: boolean;
   private readonly sleep: (ms: number) => Promise<void>;
 
   constructor(options: OrderAutomationServiceOptions) {
@@ -37,6 +41,7 @@ export class OrderAutomationService {
     this.shopifyLabels = options.shopifyLabels;
     this.store = options.store;
     this.notifier = options.notifier;
+    this.dryRun = options.dryRun ?? false;
     this.sleep = options.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
   }
 
@@ -69,6 +74,30 @@ export class OrderAutomationService {
         reason: "No fulfillment orders matched the target product rules"
       };
       await this.store.markOrderAutomationSkipped(orderGid, result);
+      return result;
+    }
+
+    if (this.dryRun) {
+      const plans: DryRunPlan[] = matchingFulfillmentOrders.map((fulfillmentOrder) => {
+        const input = buildShippingLabelPurchaseInput(fulfillmentOrder, this.config);
+        return {
+          fulfillmentOrderId: fulfillmentOrder.id,
+          packageInfo: this.config.shipping.packageInfo,
+          preferredRateSelection: this.config.shipping.preferredRateSelection,
+          totalWeight: input.totalWeight as WeightInput | undefined
+        };
+      });
+
+      const result: AutomationRunResult = {
+        orderGid,
+        orderName: order.name,
+        status: "completed",
+        dryRun: true,
+        reason: "Dry run: order matched but no label was purchased",
+        plans
+      };
+      await this.store.markOrderAutomationCompleted(orderGid, result);
+      await this.notifyDryRun(order, result);
       return result;
     }
 
@@ -127,6 +156,14 @@ export class OrderAutomationService {
         console.error("Internal notification failed", error);
       })
     ]);
+  }
+
+  private async notifyDryRun(order: ShopifyOrder, result: AutomationRunResult): Promise<void> {
+    try {
+      await this.notifier.notifyDryRun(order, result);
+    } catch (error) {
+      console.error("Dry-run notification failed", error);
+    }
   }
 
   private async safeNotifyInternal(result: AutomationRunResult): Promise<void> {

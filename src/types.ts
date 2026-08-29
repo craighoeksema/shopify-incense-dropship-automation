@@ -79,6 +79,7 @@ export interface ShippingConfig {
 export interface NotificationConfig {
   vendorEmailTo?: string;
   internalEmailTo?: string;
+  dryRunEmailTo?: string;
   slackWebhookUrl?: string;
 }
 
@@ -96,6 +97,7 @@ export interface RuntimeConfig {
   shopifyApiSecret: string;
   shopifyApiVersion: string;
   internalApiToken?: string;
+  dryRun: boolean;
   store: {
     driver: "file" | "postgres" | "memory";
     filePath: string;
@@ -232,12 +234,21 @@ export interface ShippingLabelPurchaseResult {
   shippingLabels?: PurchasedShippingLabel[] | null;
 }
 
+export interface DryRunPlan {
+  fulfillmentOrderId: string;
+  packageInfo: PackageInfoConfig;
+  preferredRateSelection?: PreferredRateSelectionConfig;
+  totalWeight?: WeightInput;
+}
+
 export interface AutomationRunResult {
   orderGid: string;
   orderName?: string | null;
   status: "completed" | "skipped" | "failed";
   reason?: string;
   labels?: PurchasedShippingLabel[];
+  dryRun?: boolean;
+  plans?: DryRunPlan[];
 }
 
 export interface OrderJob {

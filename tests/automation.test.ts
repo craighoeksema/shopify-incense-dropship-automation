@@ -4,15 +4,19 @@ import { MemoryAutomationStore } from "../src/store/memory.js";
 import type { Notifier } from "../src/notifications/index.js";
 import { testAutomationConfig, testOrder } from "./helpers.js";
 
-function fakeNotifier(): Notifier & { vendorCalls: number; internalCalls: number } {
+function fakeNotifier(): Notifier & { vendorCalls: number; internalCalls: number; dryRunCalls: number } {
   return {
     vendorCalls: 0,
     internalCalls: 0,
+    dryRunCalls: 0,
     async notifyVendor() {
       this.vendorCalls += 1;
     },
     async notifyInternal() {
       this.internalCalls += 1;
+    },
+    async notifyDryRun() {
+      this.dryRunCalls += 1;
     }
   };
 }
@@ -68,6 +72,37 @@ describe("OrderAutomationService", () => {
     expect(shopifyLabels.getPurchaseResult).toHaveBeenCalledTimes(1);
     expect(notifier.vendorCalls).toBe(1);
     expect(notifier.internalCalls).toBe(1);
+    expect(store.snapshot().automationStatuses[0]?.[1].status).toBe("completed");
+  });
+
+  it("in dry-run mode reports a plan without purchasing a label or emailing the vendor", async () => {
+    const store = new MemoryAutomationStore();
+    const notifier = fakeNotifier();
+    const shopifyLabels = {
+      getOrder: vi.fn(async () => testOrder()),
+      purchaseShippingLabel: vi.fn(),
+      getPurchaseResult: vi.fn()
+    };
+
+    const service = new OrderAutomationService({
+      config: testAutomationConfig(),
+      shopifyLabels: shopifyLabels as any,
+      store,
+      notifier,
+      dryRun: true,
+      sleep: async () => undefined
+    });
+
+    const result = await service.processOrder("gid://shopify/Order/1");
+
+    expect(result.status).toBe("completed");
+    expect(result.dryRun).toBe(true);
+    expect(result.plans).toHaveLength(1);
+    expect(result.plans?.[0]?.fulfillmentOrderId).toBe("gid://shopify/FulfillmentOrder/1");
+    expect(shopifyLabels.purchaseShippingLabel).not.toHaveBeenCalled();
+    expect(notifier.dryRunCalls).toBe(1);
+    expect(notifier.vendorCalls).toBe(0);
+    expect(notifier.internalCalls).toBe(0);
     expect(store.snapshot().automationStatuses[0]?.[1].status).toBe("completed");
   });
 

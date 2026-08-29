@@ -192,6 +192,29 @@ INTERNAL_EMAIL_TO=ops@brand.com
 
 The vendor email includes order details, tracking info, and each returned label document URL. During validation, confirm that the vendor can open the Shopify document URL. If not, update the email adapter to download and attach the returned PDF.
 
+## Dry-Run Validation
+
+Before going live, run the automation in **dry-run mode** to prove the matching rules against real orders without spending money. In dry-run mode the worker:
+
+- receives real webhooks and applies the same matching rules,
+- **does not** purchase any paid label (the `shippingLabelPurchase` mutation is never called),
+- **does not** email the vendor (Cinnamon Projects),
+- instead emails a `[DRY RUN] Would have purchased...` summary to the recipients you list, showing the ship-to address and the exact package/rate it would have bought.
+
+Enable it in `.env`:
+
+```bash
+DRY_RUN=true
+# Comma-separated. Who receives the "would have purchased" emails during the dry run.
+DRY_RUN_EMAIL_TO=you@brand.com, tracey@brand.com
+```
+
+Dry-run emails require the same `SMTP_*` settings as the other notifications. `SLACK_WEBHOOK_URL` is optional and, if set, also receives a dry-run summary.
+
+Run it exactly like production (web + worker) and let it observe live orders alongside the current manual process. Compare what it flags against the orders that were actually processed by hand.
+
+Note on going live: the `orders/create` webhook fires only once, when an order is created, so when you flip to live (`DRY_RUN=false`) only genuinely new orders are processed — orders from the dry-run window already fired their webhook and won't be reprocessed. Keep the same store across the switch; each order the dry run already saw is recorded, so a stray retry or manual replay of one of those (already manually shipped) orders is skipped instead of buying a duplicate label. Do not wipe the store just to go live.
+
 ## Manual Validation
 
 Enqueue a known order by REST numeric ID:

@@ -3,6 +3,7 @@ import type { AutomationRunResult, ShopifyOrder } from "../types.js";
 export interface Notifier {
   notifyVendor(order: ShopifyOrder, result: AutomationRunResult): Promise<void>;
   notifyInternal(result: AutomationRunResult): Promise<void>;
+  notifyDryRun(order: ShopifyOrder, result: AutomationRunResult): Promise<void>;
 }
 
 export class CompositeNotifier implements Notifier {
@@ -15,6 +16,10 @@ export class CompositeNotifier implements Notifier {
   async notifyInternal(result: AutomationRunResult): Promise<void> {
     await Promise.all(this.notifiers.map((notifier) => notifier.notifyInternal(result)));
   }
+
+  async notifyDryRun(order: ShopifyOrder, result: AutomationRunResult): Promise<void> {
+    await Promise.all(this.notifiers.map((notifier) => notifier.notifyDryRun(order, result)));
+  }
 }
 
 export class NoopNotifier implements Notifier {
@@ -23,6 +28,10 @@ export class NoopNotifier implements Notifier {
   }
 
   async notifyInternal(): Promise<void> {
+    return undefined;
+  }
+
+  async notifyDryRun(): Promise<void> {
     return undefined;
   }
 }
